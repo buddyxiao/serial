@@ -34,7 +34,7 @@ func NewMySerial() *MySerial {
 		},
 		Ser: nil, Data: make(map[string]string),
 		FilterOption: "$GPRMC",
-		Temp:         make(chan string),
+		Temp:         make(chan string, 1),
 	}
 }
 
@@ -53,6 +53,7 @@ func (s *MySerial) Close() {
 	if s.Ser == nil {
 		return
 	}
+	close(s.Temp)
 	s.Ser.Close()
 }
 
