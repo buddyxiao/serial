@@ -17,11 +17,12 @@ import (
 )
 
 type MySerial struct {
-	Option       serial.OpenOptions
-	Ser          io.ReadWriteCloser // 串口读写对象
-	Temp         chan string        // 临时存放原始定位数据
-	Data         map[string]string  // 保存解析后实时的定位信息
-	FilterOption string             // 过滤数据的字段
+	Option serial.OpenOptions
+	Ser    io.ReadWriteCloser // 串口读写对象
+	Temp   chan string        // 临时存放原始定位数据
+	//Data         map[string]string  // 保存解析后实时的定位信息
+	Data         string // 保存解析后实时的定位信息: "经度,维度" , 如："112.20832581666667,30.3373815"
+	FilterOption string // 过滤数据的字段
 	sync.RWMutex
 }
 
@@ -34,7 +35,7 @@ func NewMySerial() *MySerial {
 			StopBits:        1,
 			MinimumReadSize: 4,
 		},
-		Ser: nil, Data: make(map[string]string),
+		Ser: nil, Data: "",
 		FilterOption: "$GPRMC",
 		Temp:         make(chan string, 1),
 	}
@@ -82,9 +83,9 @@ func (s *MySerial) ReadFromSerial() {
 }
 
 // GetData 获取到经纬度信息     结果：map[lat:30.20238005 lng:112.12500994]
-func (s *MySerial) GetData() map[string]string {
+func (s *MySerial) GetData() string {
 	for true {
-		if _, ok := s.Data["lng"]; !ok {
+		if s.Data == "" {
 			fmt.Println("数据还未到...")
 		} else {
 			break
@@ -102,32 +103,28 @@ func (s *MySerial) writerToData() {
 		str := <-s.Temp
 		if data, ok := s.processStr(str); ok {
 			s.Lock()
-			s.Data["lng"] = data[0]
-			s.Data["lat"] = data[1]
+			s.Data = data
 			s.Unlock()
 		}
 	}
-
 }
 
 // 预处理数据，取出经纬度 $GPRMC,042510.00,A,3020.242890,N,11212.499549,E,0.0,329.9,290622,,,A*59
-func (s *MySerial) processStr(readString string) ([]string, bool) {
+func (s *MySerial) processStr(readString string) (string, bool) {
 	if strings.TrimSpace(readString) == "" {
-		return nil, false
+		return "", false
 	}
 	splitStr := strings.Split(readString, ",")
 	var justify = splitStr[2]
 	if justify == "A" {
-		var data = make([]string, 2)
 		var lng, flg1 = getDeg(splitStr[5]) // 经度
 		var lat, flg2 = getDeg(splitStr[3]) // 维度
 		if flg1 && flg2 {
-			data[0], data[1] = lng, lat
-			return data, true
+			return fmt.Sprintf("%s,%s", lng, lat), true
 		}
-		return nil, false
+		return "", false
 	} else {
-		return nil, false
+		return "", false
 	}
 }
 
