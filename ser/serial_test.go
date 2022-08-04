@@ -7,5 +7,10 @@ package ser
 import "testing"
 
 func TestOne(t *testing.T) {
-	movePoint("3020.242889", 2)
+	//movePoint("3020.242889", 2)
+}
+
+func TestTwo(t *testing.T) {
+	println(getDeg("3020.242890"))
+	println(getDeg("11212.499549"))
 }
