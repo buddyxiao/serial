@@ -119,10 +119,13 @@ func (s *MySerial) processStr(readString string) ([]string, bool) {
 	var justify = splitStr[2]
 	if justify == "A" {
 		var data = make([]string, 2)
-		var lng = getDeg(splitStr[5]) // 经度
-		var lat = getDeg(splitStr[3]) // 维度
-		data[0], data[1] = lng, lat
-		return data, true
+		var lng, flg1 = getDeg(splitStr[5]) // 经度
+		var lat, flg2 = getDeg(splitStr[3]) // 维度
+		if flg1 && flg2 {
+			data[0], data[1] = lng, lat
+			return data, true
+		}
+		return nil, false
 	} else {
 		return nil, false
 	}
@@ -132,15 +135,15 @@ func (s *MySerial) processStr(readString string) ([]string, bool) {
 //3020.242890,N,11212.499549,E
 //北纬：（30 + 20.242890 / 60） 度
 //东经：（112 + 12.499549 / 60) 度
-func getDeg(degree string) string {
+func getDeg(degree string) (string, bool) {
 	deg, err := strconv.ParseFloat(degree, 64)
 	if err != nil {
-		return ""
+		return "", false
 	}
 	num1 := math.Floor(deg / 100)
 	num2 := (deg - num1*100) / 60
 	res := num1 + num2
-	return strconv.FormatFloat(res, 'g', -1, 64)
+	return strconv.FormatFloat(res, 'g', -1, 64), true
 }
 
 //// 3020.242890
