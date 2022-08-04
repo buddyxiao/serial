@@ -10,6 +10,8 @@ import (
 	"github.com/jacobsa/go-serial/serial"
 	"io"
 	"log"
+	"math"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -117,8 +119,8 @@ func (s *MySerial) processStr(readString string) ([]string, bool) {
 	var justify = splitStr[2]
 	if justify == "A" {
 		var data = make([]string, 2)
-		var lng = movePoint(splitStr[5], 2) // 经度
-		var lat = movePoint(splitStr[3], 2) // 维度
+		var lng = getDeg(splitStr[5]) // 经度
+		var lat = getDeg(splitStr[3]) // 维度
 		data[0], data[1] = lng, lat
 		return data, true
 	} else {
@@ -126,14 +128,29 @@ func (s *MySerial) processStr(readString string) ([]string, bool) {
 	}
 }
 
-// 3020.242890
-func movePoint(raw string, num int) string {
-	pIdx := strings.IndexRune(raw, '.')
-	sArr := []byte(raw)
-	for i := pIdx; i > pIdx-num; i-- {
-		temp := sArr[i-1]
-		sArr[i-1] = sArr[i]
-		sArr[i] = temp
+// 计算经纬度：
+//3020.242890,N,11212.499549,E
+//北纬：（30 + 20.242890 / 60） 度
+//东经：（112 + 12.499549 / 60) 度
+func getDeg(degree string) string {
+	deg, err := strconv.ParseFloat(degree, 64)
+	if err != nil {
+		return ""
 	}
-	return string(sArr)
+	num1 := math.Floor(deg / 100)
+	num2 := (deg - num1*100) / 60
+	res := num1 + num2
+	return strconv.FormatFloat(res, 'g', -1, 64)
 }
+
+//// 3020.242890
+//func movePoint(raw string, num int) string {
+//	pIdx := strings.IndexRune(raw, '.')
+//	sArr := []byte(raw)
+//	for i := pIdx; i > pIdx-num; i-- {
+//		temp := sArr[i-1]
+//		sArr[i-1] = sArr[i]
+//		sArr[i] = temp
+//	}
+//	return string(sArr)
+//}
